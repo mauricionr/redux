@@ -1,6 +1,6 @@
 import expect from 'expect'
 import * as types from '../../constants/ActionTypes'
-import * as actions from '../../actions/todos'
+import * as actions from '../../actions'
 
 describe('todo actions', () => {
   it('addTodo should create ADD_TODO action', () => {
@@ -39,7 +39,7 @@ describe('todo actions', () => {
   })
 
   it('clearCompleted should create CLEAR_COMPLETED action', () => {
-    expect(actions.clearCompleted('Use Redux')).toEqual({
+    expect(actions.clearCompleted()).toEqual({
       type: types.CLEAR_COMPLETED
     })
   })

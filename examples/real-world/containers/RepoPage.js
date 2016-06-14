@@ -72,8 +72,12 @@ RepoPage.propTypes = {
   loadStargazers: PropTypes.func.isRequired
 }
 
-function mapStateToProps(state) {
-  const { login, name } = state.router.params
+function mapStateToProps(state, ownProps) {
+  // We need to lower case the login/name due to the way GitHub's API behaves.
+  // Have a look at ../middleware/api.js for more details.
+  const login = ownProps.params.login.toLowerCase()
+  const name = ownProps.params.name.toLowerCase()
+
   const {
     pagination: { stargazersByRepo },
     entities: { users, repos }

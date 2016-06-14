@@ -20,7 +20,7 @@ Redux’s **_only_** job on the server side is to provide the **initial state** 
 
 ## Setting Up
 
-In the following recipe, we are going to look at how to set up server-side rendering. We’ll use the simplistic [Counter app](https://github.com/rackt/redux/tree/master/examples/counter) as a guide and show how the server can render state ahead of time based on the request.
+In the following recipe, we are going to look at how to set up server-side rendering. We’ll use the simplistic [Counter app](https://github.com/reactjs/redux/tree/master/examples/counter) as a guide and show how the server can render state ahead of time based on the request.
 
 ### Install Packages
 
@@ -53,7 +53,7 @@ app.use(handleRender)
 
 // We are going to fill these out in the sections to follow
 function handleRender(req, res) { /* ... */ }
-function renderFullPage(html, initialState) { /* ... */ }
+function renderFullPage(html, preloadedState) { /* ... */ }
 
 app.listen(port)
 ```
@@ -83,23 +83,23 @@ function handleRender(req, res) {
   )
 
   // Grab the initial state from our Redux store
-  const initialState = store.getState()
+  const preloadedState = store.getState()
 
   // Send the rendered page back to the client
-  res.send(renderFullPage(html, initialState))
+  res.send(renderFullPage(html, preloadedState))
 }
 ```
 
 ### Inject Initial Component HTML and State
 
-The final step on the server side is to inject our initial component HTML and initial state into a template to be rendered on the client side. To pass along the state, we add a `<script>` tag that will attach `initialState` to `window.__INITIAL_STATE__`.
+The final step on the server side is to inject our initial component HTML and initial state into a template to be rendered on the client side. To pass along the state, we add a `<script>` tag that will attach `preloadedState` to `window.__PRELOADED_STATE__`.
 
-The `initialState` will then be available on the client side by accessing `window.__INITIAL_STATE__`.
+The `preloadedState` will then be available on the client side by accessing `window.__PRELOADED_STATE__`.
 
 We also include our bundle file for the client-side application via a script tag. This is whatever output your bundling tool provides for your client entry point. It may be a static file or a URL to a hot reloading development server.
 
 ```js
-function renderFullPage(html, initialState) {
+function renderFullPage(html, preloadedState) {
   return `
     <!doctype html>
     <html>
@@ -107,9 +107,9 @@ function renderFullPage(html, initialState) {
         <title>Redux Universal Example</title>
       </head>
       <body>
-        <div id="app">${html}</div>
+        <div id="root">${html}</div>
         <script>
-          window.__INITIAL_STATE__ = ${JSON.stringify(initialState)}
+          window.__PRELOADED_STATE__ = ${JSON.stringify(preloadedState)}
         </script>
         <script src="/static/bundle.js"></script>
       </body>
@@ -124,7 +124,7 @@ function renderFullPage(html, initialState) {
 
 ## The Client Side
 
-The client side is very straightforward. All we need to do is grab the initial state from `window.__INITIAL_STATE__`, and pass it to our [`createStore()`](../api/createStore.md) function as the initial state.
+The client side is very straightforward. All we need to do is grab the initial state from `window.__PRELOADED_STATE__`, and pass it to our [`createStore()`](../api/createStore.md) function as the initial state.
 
 Let’s take a look at our new client file:
 
@@ -139,10 +139,10 @@ import App from './containers/App'
 import counterApp from './reducers'
 
 // Grab the state from a global injected into server-generated HTML
-const initialState = window.__INITIAL_STATE__
+const preloadedState = window.__PRELOADED_STATE__
 
 // Create Redux store with initial state
-const store = createStore(counterApp, initialState)
+const store = createStore(counterApp, preloadedState)
 
 render(
   <Provider store={store}>
@@ -168,7 +168,7 @@ Because the client side executes ongoing code, it can start with an empty initia
 
 The only input for server side code is the request made when loading up a page in your app in your browser. You may choose to configure the server during its boot (such as when you are running in a development vs. production environment), but that configuration is static.
 
-The request contains information about the URL requested, including any query parameters, which will be useful when using something like [React Router](https://github.com/rackt/react-router). It can also contain headers with inputs like cookies or authorization, or POST body data. Let’s see how we can set the initial counter state based on a query parameter.
+The request contains information about the URL requested, including any query parameters, which will be useful when using something like [React Router](https://github.com/reactjs/react-router). It can also contain headers with inputs like cookies or authorization, or POST body data. Let’s see how we can set the initial counter state based on a query parameter.
 
 #### `server.js`
 
@@ -179,13 +179,13 @@ import { renderToString } from 'react-dom/server'
 function handleRender(req, res) {
   // Read the counter from the request, if provided
   const params = qs.parse(req.query)
-  const counter = parseInt(params.counter) || 0
+  const counter = parseInt(params.counter, 10) || 0
 
   // Compile an initial state
-  let initialState = { counter }
+  let preloadedState = { counter }
 
   // Create a new Redux store instance
-  const store = createStore(counterApp, initialState)
+  const store = createStore(counterApp, preloadedState)
 
   // Render the component to a string
   const html = renderToString(
@@ -202,7 +202,7 @@ function handleRender(req, res) {
 }
 ```
 
-The code reads from the Express `Request` object passed into our server middleware. The parameter is parsed into a number and then set in the initial state. If you visit [http://localhost:3000/?counter=100](http://localhost:3000/?counter=100) in your browser, you’ll see the counter starts at 100. In the rendered HTML, you’ll see the counter output as 100 and the `__INITIAL_STATE__` variable has the counter set in it.
+The code reads from the Express `Request` object passed into our server middleware. The parameter is parsed into a number and then set in the initial state. If you visit [http://localhost:3000/?counter=100](http://localhost:3000/?counter=100) in your browser, you’ll see the counter starts at 100. In the rendered HTML, you’ll see the counter output as 100 and the `__PRELOADED_STATE__` variable has the counter set in it.
 
 ### Async State Fetching
 
@@ -242,13 +242,13 @@ function handleRender(req, res) {
   fetchCounter(apiResult => {
     // Read the counter from the request, if provided
     const params = qs.parse(req.query)
-    const counter = parseInt(params.counter) || apiResult || 0
+    const counter = parseInt(params.counter, 10) || apiResult || 0
 
     // Compile an initial state
-    let initialState = { counter }
+    let preloadedState = { counter }
 
     // Create a new Redux store instance
-    const store = createStore(counterApp, initialState)
+    const store = createStore(counterApp, preloadedState)
 
     // Render the component to a string
     const html = renderToString(
@@ -282,4 +282,4 @@ Furthermore, you can add additional layers of security by sanitizing your state 
 
 You may want to read [Async Actions](../advanced/AsyncActions.md) to learn more about expressing asynchronous flow in Redux with async primitives such as Promises and thunks. Keep in mind that anything you learn there can also be applied to universal rendering.
 
-If you use something like [React Router](https://github.com/rackt/react-router), you might also want to express your data fetching dependencies as static `fetchData()` methods on your route handler components. They may return [async actions](../advanced/AsyncActions.md), so that your `handleRender` function can match the route to the route handler component classes, dispatch `fetchData()` result for each of them, and render only after the Promises have resolved. This way the specific API calls required for different routes are colocated with the route handler component definitions. You can also use the same technique on the client side to prevent the router from switching the page until its data has been loaded.
+If you use something like [React Router](https://github.com/reactjs/react-router), you might also want to express your data fetching dependencies as static `fetchData()` methods on your route handler components. They may return [async actions](../advanced/AsyncActions.md), so that your `handleRender` function can match the route to the route handler component classes, dispatch `fetchData()` result for each of them, and render only after the Promises have resolved. This way the specific API calls required for different routes are colocated with the route handler component definitions. You can also use the same technique on the client side to prevent the router from switching the page until its data has been loaded.

@@ -4,7 +4,7 @@ import { loadUser, loadStarred } from '../actions'
 import User from '../components/User'
 import Repo from '../components/Repo'
 import List from '../components/List'
-import zip from 'lodash/array/zip'
+import zip from 'lodash/zip'
 
 function loadData(props) {
   const { login } = props
@@ -72,8 +72,11 @@ UserPage.propTypes = {
   loadStarred: PropTypes.func.isRequired
 }
 
-function mapStateToProps(state) {
-  const { login } = state.router.params
+function mapStateToProps(state, ownProps) {
+  // We need to lower case the login due to the way GitHub's API behaves.
+  // Have a look at ../middleware/api.js for more details.
+  const login = ownProps.params.login.toLowerCase()
+
   const {
     pagination: { starredByUser },
     entities: { users, repos }
