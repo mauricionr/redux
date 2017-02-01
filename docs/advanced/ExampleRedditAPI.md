@@ -64,7 +64,7 @@ function receivePosts(subreddit, json) {
 function fetchPosts(subreddit) {
   return dispatch => {
     dispatch(requestPosts(subreddit))
-    return fetch(`http://www.reddit.com/r/${subreddit}.json`)
+    return fetch(`https://www.reddit.com/r/${subreddit}.json`)
       .then(response => response.json())
       .then(json => dispatch(receivePosts(subreddit, json)))
   }
@@ -226,15 +226,16 @@ class AsyncApp extends Component {
     dispatch(fetchPostsIfNeeded(selectedSubreddit))
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.selectedSubreddit !== this.props.selectedSubreddit) {
-      const { dispatch, selectedSubreddit } = nextProps
+  componentDidUpdate(prevProps) {
+    if (this.props.selectedSubreddit !== prevProps.selectedSubreddit) {
+      const { dispatch, selectedSubreddit } = this.props
       dispatch(fetchPostsIfNeeded(selectedSubreddit))
     }
   }
 
   handleChange(nextSubreddit) {
     this.props.dispatch(selectSubreddit(nextSubreddit))
+    this.props.dispatch(fetchPostsIfNeeded(nextSubreddit))
   }
 
   handleRefreshClick(e) {

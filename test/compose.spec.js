@@ -1,4 +1,3 @@
-import expect from 'expect'
 import { compose } from '../src'
 
 describe('Utils', () => {
@@ -20,6 +19,17 @@ describe('Utils', () => {
       expect(compose(a, b, c)(final)('')).toBe('abc')
       expect(compose(b, c, a)(final)('')).toBe('bca')
       expect(compose(c, a, b)(final)('')).toBe('cab')
+    })
+
+    it('throws at runtime if argument is not a function', () => {
+      const square = x => x * x
+      const add = (x, y) => x + y
+
+      expect(() => compose(square, add, false)(1, 2)).toThrow()
+      expect(() => compose(square, add, undefined)(1, 2)).toThrow()
+      expect(() => compose(square, add, true)(1, 2)).toThrow()
+      expect(() => compose(square, add, NaN)(1, 2)).toThrow()
+      expect(() => compose(square, add, '42')(1, 2)).toThrow()
     })
 
     it('can be seeded with multiple arguments', () => {
